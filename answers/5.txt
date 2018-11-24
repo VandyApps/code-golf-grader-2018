@@ -1,0 +1,69 @@
+<prime value="2">
+</prime>
+
+<composite value="4">
+	<prime value="2">
+	</prime>
+	<prime value="2">
+	</prime>
+</composite>
+
+<composite value="18">
+	<prime value="2">
+	</prime>
+	<composite value="9">
+		<prime value="3">
+		</prime>
+		<prime value="3">
+		</prime>
+	</composite>
+</composite>
+
+<composite value="27">
+	<prime value="3">
+	</prime>
+	<composite value="9">
+		<prime value="3">
+		</prime>
+		<prime value="3">
+		</prime>
+	</composite>
+</composite>
+
+<composite value="2002">
+	<prime value="2">
+	</prime>
+	<composite value="1001">
+		<prime value="7">
+		</prime>
+		<composite value="143">
+			<prime value="11">
+			</prime>
+			<prime value="13">
+			</prime>
+		</composite>
+	</composite>
+</composite>
+
+<composite value="63721474">
+	<prime value="2">
+	</prime>
+	<composite value="31860737">
+		<prime value="17">
+		</prime>
+		<composite value="1874161">
+			<prime value="37">
+			</prime>
+			<composite value="50653">
+				<prime value="37">
+				</prime>
+				<composite value="1369">
+					<prime value="37">
+					</prime>
+					<prime value="37">
+					</prime>
+				</composite>
+			</composite>
+		</composite>
+	</composite>
+</composite>

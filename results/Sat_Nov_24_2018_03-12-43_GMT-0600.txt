@@ -1,0 +1,11 @@
+
+1.
+
+---------quinton22-1297---------
+	problem 1: 3000
+	problem 2: 3000
+	problem 3: 3000
+	problem 4: 3000
+	problem 5: 3000
+	problem 6: 3000
+	total: 18000

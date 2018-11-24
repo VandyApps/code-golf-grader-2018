@@ -1,12 +1,12 @@
 const http = require('http')
-const { spawnSync } = require('child_process');
+const { execSync } = require('child_process');
 const formidable = require('formidable');
 const fs = require('fs');
 
 const RESULTS_DIRNAME = './results';
-const SUBMISSION_DIRNAME = './submissions';
+const SUBMISSION_FILENAME = 'submissions.txt';
 const NUM_PROBLEMS = 6;
-const SOLUTIONS = new Array(NUM_PROBLEMS).map((_, i) => `./answers/${(i + 1).toString()}.txt`);
+const SOLUTIONS = new Array(NUM_PROBLEMS).fill('').map((_, i) => `./answers/${(i + 1).toString()}.txt`);
 const SORT_ANSWERS = new Array(NUM_PROBLEMS).fill(false);
 const DEFAULT_SCORES = new Array(NUM_PROBLEMS).fill(3000);
 const DEFAULT_CORRECTNESS = new Array(NUM_PROBLEMS).fill(false);
@@ -36,7 +36,7 @@ class Contest {
 	}
 
 	dump_all_results() {
-		let results_id = new Date().toString().replace(/ \(.*\)/, '').replace(/ /g, '_');
+		let results_id = new Date().toString().replace(/ \(.*\)/, '').replace(/ /g, '_').replace(/:/g, '-');
 		
 		// write to file
 		//----------------------------------------------------------------------
@@ -47,7 +47,7 @@ class Contest {
 		//----------------------------------------------------------------------
 		// JAVASCRIPT
 		let data = this.sortedContestants().map((contestant, i) => `\n${(i + 1).toString()}.\n${contestant.toString()}`).join('\n');
-		fs.writeFile(`${RESULTS_DIRNAME}/${results_id}.txt`, data, (err) => console.log(err));
+		fs.writeFileSync(`${RESULTS_DIRNAME}/${results_id}.txt`, data);
 		//----------------------------------------------------------------------
 		return results_id;
 	}
@@ -79,7 +79,7 @@ class Contestant {
 	// }
 
 	toString() {
-		let s = `\n---------${this.name}---------`;
+		let s = `\n---------${this.name}---------\n`;
 		this.scores.forEach((score, i) => s += `\tproblem ${(i+1).toString()}: ${this.correctness[i] ? score : DEFAULT_SCORES[i]}\n`);
 		s += `\ttotal: ${this.get_total_score()}\n`
 		return s;
@@ -87,14 +87,10 @@ class Contestant {
 
 }
 
-console.log(exec_shell('ls'));
-
-
 // execute a function in bash
 function exec_shell(str) {
 	// returns the stdout
-	let {stdout, stderr} = spawnSync(str);
-	return {stdout: stdout.toString(), stderr: stderr.toString()};
+	return execSync(str).toString();
 }
 
 function read_file(path) {
@@ -113,26 +109,26 @@ function read_file_js(path) {
 
 
 function build_submission_dir(sub_file_name) {
-	if (sub_file_name === undefined) sub_file_name = fs.readdirSync(SUBMISSION_DIRNAME)[0];
-	
+	if (sub_file_name === undefined) sub_file_name = SUBMISSION_FILENAME
 	// read file and put data into sub_str
-	let github_list = read_file(SUBMISSION_DIRNAME + '/' + sub_file_name).trim().split('/n');
-
-	// REMOVE
-	console.log(github_list);
+	let github_list = read_file(sub_file_name).trim().split(/\r\n|\n|\r/);
 
 	// clones the repo and returns the string of the file director cloned into
-	github_list.map(repo => clone_github_repo(repo));
+	github_list = github_list.map(repo => clone_github_repo(repo)).filter(item => item !== null);
 	return github_list;
 }
 
 // clone a github repo
 function clone_github_repo(url) {
-	console.log('cloning: ' + url);
 	let randInt = Math.floor(Math.random() * 10000).toString();
 	let github_dirname = `${extract_username(url)}-${randInt}`;
-	exec_shell(`git clone ${url} ./github_dirs/${github_dirname}/`);
-	return github_dirname;
+	try {
+		console.log(exec_shell(`git clone ${url} ./github_dirs/${github_dirname}/`));
+		return github_dirname;
+	} catch (e) {
+		console.log(`Not including ${extract_username(url)} in the contest\n`);
+		return null;
+	}
 }
 
 // get github username from url
@@ -142,24 +138,43 @@ function extract_username(url) {
 }
 
 function is_txt(fname) {
-	return fname.split('.')[-1] === 'txt';
+	return fname.split('.').pop() === 'txt';
 }
 
 function is_file_of_interest(fname) {
-	return fname[0] !== '.' && fname.split('.')[-1] !== 'git' && fname.split('.')[-1] !== 'txt';
+	return fname[0] !== '.' && fname.split('.').pop() !== 'git' && fname.split('.').pop() !== 'txt';
 }
 
 function is_answer_file_of_interest(fname) {
-	return fname[0] !== '.' && fname.split('.')[-1] !== 'git';
+	return fname[0] !== '.' && fname.split('.').pop() !== 'git';
 }
 
 function extract_problem_number(fname) {
-	return ~~fname;
+	return parseInt(fname.match(/\d+/));
 }
 
 // returns file size in number of bytes
 function file_size(fname) {
 	return fs.statSync(fname).size;
+}
+
+function list_equality(l1, l2) {
+	if (l1.length !== l2.length)
+		return false;
+	
+	for (let i = 0; i < l1.length; ++i) {
+		if (typeof l1[i] !== typeof l2[i])
+			return false;
+		if (typeof l1[i] === "object") {
+			if (!list_equality(l1[i], l2[i]))
+				return false;
+		} else {
+			if (l1[i] !== l2[i])
+				return false;
+		}
+	}
+
+	return true;
 }
 
 function display(s) {
@@ -170,22 +185,22 @@ function display(s) {
 // =============================================================================
 // =============================================================================
 
-console.log('Starting grader\n');
+console.log('\nStarting grader\n');
 
 // Checking command line arguments to see what mode to start
 if (process.argv.length === 3) {
 	if (process.argv[2].toLowerCase() === 'cmd') {
-		console.log('Command line interface chosen.');
+		console.log('Command line interface chosen.\n');
 		MODE = 1;
 	} else if (process.argv[2].toLowerCase() === 'gui') {
-		console.log('GUI chosen.\nPlease go to https://localhost:8080');
+		console.log('GUI chosen.\nPlease go to https://localhost:8080\n');
 		MODE = 0;
 	} else {
-		console.log('Unknown argument--defaulting to GUI.\nPlease go to https://localhost:8080');
+		console.log('Unknown argument--defaulting to GUI.\nPlease go to https://localhost:8080\n');
 		MODE = 0;
 	}
 } else {
-	console.log('No command line argument given--defaulting to GUI.\nPlease go to https://localhost:8080');
+	console.log('No command line argument given--defaulting to GUI.\nPlease go to https://localhost:8080\n');
 }
 
 if (MODE === 0) {
@@ -208,7 +223,7 @@ if (MODE === 0) {
 			form.parse(req, (err, fields, files) => {
 				if (files.urls !== undefined) {
 					var oldPath = files.urls.path;
-					var newPath = __dirname + '/' + SUBMISSION_DIRNAME + '/' + files.urls.name;
+					var newPath = __dirname + '/' + files.urls.name;
 					fs.rename(oldPath, newPath, (err) => {
 						if (err)
 							throw err;
@@ -252,7 +267,7 @@ if (MODE === 0) {
 	let parsed_solutions = [];
 
 	SOLUTIONS.forEach((solution, index) => {
-		question_answers = read_file(solution).trim().split('\n').map(line => line.split(' '));
+		let question_answers = read_file(solution).trim().split(/\r\n|\n|\r/).map(line => line.split(/\s/));
 
 		if (SORT_ANSWERS[index])
 			question_answers.sort();
@@ -260,16 +275,16 @@ if (MODE === 0) {
 		parsed_solutions.push(question_answers);
 	});
 
-	console.log('\nScoring contestants...\n');
-
-	console.log(fs.readdirSync(`.`));
+	console.log('\nScoring contestants...');
 
 	github_dirnames.forEach((contestant) => {
-		console.log(`Evaluating contestant ${contestant}`);
+		console.log(`\nEvaluating contestant ${contestant}`);
 
 		let new_contestant_obj = new Contestant(contestant);
 		contest.add_contestant(new_contestant_obj);
 
+		// TODO
+		// check if solutions and answers directories exist
 		fs.readdirSync(`./github_dirs/${contestant}`);
 
 		//----------------------------------------------------------------------
@@ -295,9 +310,27 @@ if (MODE === 0) {
 			}
 		});
 
-		let answers = fs.readdirSync(`./github_dirs/${contestant}/answers`, { encoding: 'utf8', withFileTypes: true });
+		let answers = fs.readdirSync(`./github_dirs/${contestant}/answers`);
+		answers.forEach(answer => {
+			if(is_answer_file_of_interest(answer)) {
+				let problem_num = extract_problem_number(answer);
+				if (problem_num) {
+					console.log(`Evaluating answer: ${answer}`);
+					let source = answer;
+					question_answers = read_file(`./github_dirs/${contestant}/answers/${source}`).trim().split(/\r\n|\n|\r/).map(line => line.split(/\s/));		
+					
+					if (SORT_ANSWERS[problem_num - 1])
+						question_answers.sort();
+					
+					new_contestant_obj.add_correct(problem_num, list_equality(question_answers, parsed_solutions[problem_num - 1]));
+				}
+			}
+		});
 	});
 
+	let result_name = contest.dump_all_results();
+	console.log(`\n\nResult file: ${result_name}.txt\n\n`);
+	console.log(exec_shell(`cat ./results/${result_name}.txt`));
 	
 
 }
