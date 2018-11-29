@@ -1,2 +1,1 @@
-https://github.com/ethanlook/code-golf-spring-2017
-https://github.com/adamMgross/code-golf-spring-2017
+https://github.com/quinton22/code-golf-fall-2018

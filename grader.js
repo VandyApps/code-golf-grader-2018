@@ -10,9 +10,14 @@ const SOLUTIONS = new Array(NUM_PROBLEMS).fill('').map((_, i) => `./answers/${(i
 const SORT_ANSWERS = new Array(NUM_PROBLEMS).fill(false);
 const DEFAULT_SCORES = new Array(NUM_PROBLEMS).fill(3000);
 const DEFAULT_CORRECTNESS = new Array(NUM_PROBLEMS).fill(false);
+const VANDYAPPS = " __      __             _                                \n \\ \\    / /            | |         /\\                    \n  \\ \\  / /_ _ _ __   __| |_   _   /  \\   _ __  _ __  ___ \n   \\ \\/ / _` | '_ \\ / _` | | | | / /\\ \\ | '_ \\| '_ \\/ __|\n    \\  / (_| | | | | (_| | |_| |/ ____ \\| |_) | |_) \\__ \\ \n     \\/ \\__,_|_| |_|\\__,_|\\__, /_/    \\_\\ .__/| .__/|___/\n                           __/ |        | |   | |        \n                          |___/         |_|   |_|        \n";
+const CODEGOLF = "   _____          _         _____       _  __ \n  / ____|        | |       / ____|     | |/ _|\n | |     ___   __| | ___  | |  __  ___ | | |_ \n | |    / _ \\ / _` |/ _ \\ | | |_ |/ _ \\| |  _|\n | |___| (_) | (_| |  __/ | |__| | (_) | | |  \n  \\_____\\___/ \\__,_|\\___|  \\_____|\\___/|_|_|  \n                                              \n";
+const YEAR = "  ___   ___  __ ______ \n |__ \\ / _ \\/_ |____  |\n    ) | | | || |   / / \n   / /| | | || |  / /  \n  / /_| |_| || | / /   \n |____|\\___/ |_|/_/    \n                       \n\n\n";
+
 let MODE = 0;
 
-;
+
+
 
 class Contest {
 	constructor() {
@@ -178,159 +183,181 @@ function list_equality(l1, l2) {
 }
 
 function display(s) {
-	exec_shell('clear');
+	console.log(exec_shell('clear'));
 	console.log(s);
 }
 
 // =============================================================================
 // =============================================================================
-
-console.log('\nStarting grader\n');
-
-// Checking command line arguments to see what mode to start
-if (process.argv.length === 3) {
-	if (process.argv[2].toLowerCase() === 'cmd') {
-		console.log('Command line interface chosen.\n');
-		MODE = 1;
-	} else if (process.argv[2].toLowerCase() === 'gui') {
-		console.log('GUI chosen.\nPlease go to https://localhost:8080\n');
-		MODE = 0;
-	} else {
-		console.log('Unknown argument--defaulting to GUI.\nPlease go to https://localhost:8080\n');
-		MODE = 0;
-	}
-} else {
-	console.log('No command line argument given--defaulting to GUI.\nPlease go to https://localhost:8080\n');
+async function display_name() {
+	return new Promise(resolve => {
+		let arr = [YEAR, CODEGOLF, VANDYAPPS];
+		let i = setInterval(() => {
+			if(arr.length > 0)
+				 console.log(arr.pop())
+			else {
+				resolve(clearInterval(i));
+			}
+		}, 500);
+	}).then(() => new Promise(resolve => {
+		let t = setTimeout(() => {
+			display('');
+			resolve(clearTimeout(t));
+		}, 1000);
+	}));
 }
 
-if (MODE === 0) {
-	// GUI
 
-	// delete and remake the github_dirs folder
-	exec_shell('rm -rf github_dirs');
-	exec_shell('mkdir github_dirs');
+function run() {
+	console.log('\nStarting grader\n');
 
-	let contest = new Contest();
+	// Checking command line arguments to see what mode to start
+	if (process.argv.length === 3) {
+		if (process.argv[2].toLowerCase() === 'cmd') {
+			console.log('Command line interface chosen.\n');
+			MODE = 1;
+		} else if (process.argv[2].toLowerCase() === 'gui') {
+			console.log('GUI chosen.\nPlease go to https://localhost:8080\n');
+			MODE = 0;
+		} else {
+			console.log('Unknown argument--defaulting to GUI.\nPlease go to https://localhost:8080\n');
+			MODE = 0;
+		}
+	} else {
+		console.log('No command line argument given--defaulting to GUI.\nPlease go to https://localhost:8080\n');
+	}
 
-	let github_dirnames;
+	if (MODE === 0) {
+		// GUI
 
-	let parsed_solutions = [];
+		// delete and remake the github_dirs folder
+		exec_shell('rm -rf github_dirs');
+		exec_shell('mkdir github_dirs');
 
-	http.createServer((req, res) => {
-		if (req.url == '/submitUrls') {
-			exec_shell('rm -rf submissions/*');
-			var form = new formidable.IncomingForm();
-			form.parse(req, (err, fields, files) => {
-				if (files.urls !== undefined) {
-					var oldPath = files.urls.path;
-					var newPath = __dirname + '/' + files.urls.name;
-					fs.rename(oldPath, newPath, (err) => {
-						if (err)
-							throw err;
-					});
+		let contest = new Contest();
 
-					github_dirnames = build_submission_dir(files.urls.name);
+		let github_dirnames;
 
-					res.write('<p>Thank you! Cloning repositories now</p>');
-					res.write('<img class="irc_mi" src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif">');
-					res.end();
+		let parsed_solutions = [];
+
+		http.createServer((req, res) => {
+			if (req.url == '/submitUrls') {
+				exec_shell('rm -rf submissions/*');
+				var form = new formidable.IncomingForm();
+				form.parse(req, (err, fields, files) => {
+					if (files.urls !== undefined) {
+						var oldPath = files.urls.path;
+						var newPath = __dirname + '/' + files.urls.name;
+						fs.rename(oldPath, newPath, (err) => {
+							if (err)
+								throw err;
+						});
+
+						github_dirnames = build_submission_dir(files.urls.name);
+
+						res.write('<p>Thank you! Cloning repositories now</p>');
+						res.write('<img class="irc_mi" src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif">');
+						res.end();
+					}
+				});
+
+
+			} else {
+				console.log('Getting answers');
+
+				res.writeHead(200, { 'Content-Type': 'text/html' });
+				res.write('<h1>Code Golf 2018</h1>');
+				res.write('<p>Please submit a text file of the submission links below</p>');
+				res.write('<form action="submitUrls" method="post" enctype="multipart/form-data">');
+				res.write('<input type="file" name="urls"><br>');
+				res.write('<input type="submit">');
+				res.write('</form>');
+				return res.end();
+			}
+		}).listen(8080);
+	} else {
+		// COMMAND LINE
+		// delete and remake the github_dirs folder
+		exec_shell('rm -rf github_dirs');
+		exec_shell('mkdir github_dirs');
+
+		// reads from all files in the submissions directory
+		let github_dirnames = build_submission_dir();
+
+		let contest = new Contest();
+
+		console.log('Getting answers...');
+
+		let parsed_solutions = [];
+
+		SOLUTIONS.forEach((solution, index) => {
+			let question_answers = read_file(solution).trim().split(/\r\n|\n|\r/).map(line => line.split(/\s/));
+
+			if (SORT_ANSWERS[index])
+				question_answers.sort();
+
+			parsed_solutions.push(question_answers);
+		});
+
+		console.log('\nScoring contestants...');
+
+		github_dirnames.forEach((contestant) => {
+			console.log(`\nEvaluating contestant ${contestant}`);
+
+			let new_contestant_obj = new Contestant(contestant);
+			contest.add_contestant(new_contestant_obj);
+
+			// TODO
+			// check if solutions and answers directories exist
+			fs.readdirSync(`./github_dirs/${contestant}`);
+
+			//----------------------------------------------------------------------
+			// BASH
+
+			//----------------------------------------------------------------------
+			//----------------------------------------------------------------------
+			// JAVASCRIPT
+			let solutions = fs.readdirSync(`./github_dirs/${contestant}/solutions`);
+			//----------------------------------------------------------------------
+
+			solutions.forEach(solution => {
+				if (is_file_of_interest(solution)) {
+
+					console.log(`Evalutating solution: ${solution}`);
+
+					let problem_num = extract_problem_number(solution);
+
+					let source = solution;
+
+					let fsize = file_size(`./github_dirs/${contestant}/solutions/${source}`);
+					new_contestant_obj.add_filesize(problem_num, fsize);
 				}
 			});
 
-				
-		} else {
-			console.log('Getting answers');
+			let answers = fs.readdirSync(`./github_dirs/${contestant}/answers`);
+			answers.forEach(answer => {
+				if (is_answer_file_of_interest(answer)) {
+					let problem_num = extract_problem_number(answer);
+					if (problem_num) {
+						console.log(`Evaluating answer: ${answer}`);
+						let source = answer;
+						question_answers = read_file(`./github_dirs/${contestant}/answers/${source}`).trim().split(/\r\n|\n|\r/).map(line => line.split(/\s/));
 
-			res.writeHead(200, {'Content-Type': 'text/html'});
-			res.write('<h1>Code Golf 2018</h1>');
-			res.write('<p>Please submit a text file of the submission links below</p>');
-			res.write('<form action="submitUrls" method="post" enctype="multipart/form-data">');
-			res.write('<input type="file" name="urls"><br>');
-			res.write('<input type="submit">');
-			res.write('</form>');
-			return res.end();
-		}
-	}).listen(8080);
-} else {
-	// COMMAND LINE
-	// delete and remake the github_dirs folder
-	exec_shell('rm -rf github_dirs');
-	exec_shell('mkdir github_dirs');
+						if (SORT_ANSWERS[problem_num - 1])
+							question_answers.sort();
 
-	// reads from all files in the submissions directory
-	let github_dirnames = build_submission_dir();
-
-	let contest = new Contest();
-
-	console.log('Getting answers...');
-
-	let parsed_solutions = [];
-
-	SOLUTIONS.forEach((solution, index) => {
-		let question_answers = read_file(solution).trim().split(/\r\n|\n|\r/).map(line => line.split(/\s/));
-
-		if (SORT_ANSWERS[index])
-			question_answers.sort();
-
-		parsed_solutions.push(question_answers);
-	});
-
-	console.log('\nScoring contestants...');
-
-	github_dirnames.forEach((contestant) => {
-		console.log(`\nEvaluating contestant ${contestant}`);
-
-		let new_contestant_obj = new Contestant(contestant);
-		contest.add_contestant(new_contestant_obj);
-
-		// TODO
-		// check if solutions and answers directories exist
-		fs.readdirSync(`./github_dirs/${contestant}`);
-
-		//----------------------------------------------------------------------
-		// BASH
-		
-		//----------------------------------------------------------------------
-		//----------------------------------------------------------------------
-		// JAVASCRIPT
-		let solutions =	fs.readdirSync(`./github_dirs/${contestant}/solutions`);
-		//----------------------------------------------------------------------
-
-		solutions.forEach(solution => {
-			if (is_file_of_interest(solution)) {
-
-				console.log(`Evalutating solution: ${solution}`);
-
-				let problem_num = extract_problem_number(solution);
-
-				let source = solution;
-
-				let fsize = file_size(`./github_dirs/${contestant}/solutions/${source}`);
-				new_contestant_obj.add_filesize(problem_num, fsize);
-			}
-		});
-
-		let answers = fs.readdirSync(`./github_dirs/${contestant}/answers`);
-		answers.forEach(answer => {
-			if(is_answer_file_of_interest(answer)) {
-				let problem_num = extract_problem_number(answer);
-				if (problem_num) {
-					console.log(`Evaluating answer: ${answer}`);
-					let source = answer;
-					question_answers = read_file(`./github_dirs/${contestant}/answers/${source}`).trim().split(/\r\n|\n|\r/).map(line => line.split(/\s/));		
-					
-					if (SORT_ANSWERS[problem_num - 1])
-						question_answers.sort();
-					
-					new_contestant_obj.add_correct(problem_num, list_equality(question_answers, parsed_solutions[problem_num - 1]));
+						new_contestant_obj.add_correct(problem_num, list_equality(question_answers, parsed_solutions[problem_num - 1]));
+					}
 				}
-			}
+			});
 		});
-	});
 
-	let result_name = contest.dump_all_results();
-	console.log(`\n\nResult file: ${result_name}.txt\n\n`);
-	console.log(exec_shell(`cat ./results/${result_name}.txt`));
-	
+		let result_name = contest.dump_all_results();
+		console.log(`\n\nResult file: ${result_name}.txt\n\n`);
+		console.log(exec_shell(`cat ./results/${result_name}.txt`));
 
+
+	}
 }
+
+display_name().then(() => run());
