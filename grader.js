@@ -418,7 +418,7 @@ class Contestant {
 		this.name = name;
 		this.scores = DEFAULT_SCORES.slice();
 		this.correctness = DEFAULT_CORRECTNESS.slice();
-		this.diffs = [];
+		this.diffs = new Map();
 	}
 
 	add_filesize(problem, score) {
@@ -460,7 +460,7 @@ class Contestant {
 					this.nextElementSibling.hidden = this.nextElementSibling.hidden ? false : true;
 				}">${down_arrow}</a>
 				<div style="padding-left: 10px;" hidden>
-					${this.diffs[i]}
+					${this.diffs.has(i+1) ? this.diffs.get(i+1) : 'No file found'}
 				</div>
 				</li>`).join('')}
 			</ul>
@@ -577,6 +577,10 @@ function getDiff(a1, a2) {
 		}
 	});
 
+	if (s === undefined) {
+		console.log('\n\nUNDEFINED\n\n',d)
+	} else if (s === 'undefined')
+		console.log('\n\nundefined\n\n',d)
 	return s;
 
 }
@@ -596,7 +600,6 @@ function listDiff(l1, l2) {
 				diff.set(i, [l1[i], l2[i]]);
 		}
 	}
-
 	return diff;
 }
 
@@ -652,8 +655,6 @@ function run_gui() {
 	let github_dirnames = [];
 
 	let parsed_solutions = [];
-
-	let diffs = {};
 
 	http.createServer((req, res) => {
 		switch (req.url) {
@@ -838,6 +839,7 @@ function run_gui() {
 					// check if solutions and answers directories exist
 					let doesExist = fs.readdirSync(`./github_dirs/${contestant}`);
 					if (!(doesExist.includes('answers') && doesExist.includes('solutions'))) {
+						console.log(`\nSkipping contestant ${contestant}`);
 						res.write(`<li>
 							${contestant} did not have proper directory structure (/answers and /solutions), so they are not being evaluated.
 						</li>`);
@@ -877,7 +879,7 @@ function run_gui() {
 								new_contestant_obj.add_correct(problem_num, list_equality(question_answers,
 									parsed_solutions[problem_num - 1]));
 
-								new_contestant_obj.diffs.push(getDiff(parsed_solutions[problem_num - 1], question_answers));
+								new_contestant_obj.diffs.set(problem_num, getDiff(parsed_solutions[problem_num - 1], question_answers));
 							}
 						}
 					});
