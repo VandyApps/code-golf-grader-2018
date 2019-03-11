@@ -815,7 +815,7 @@ function run_gui() {
 					res.writeHead(200, {
 						'Content-Type': 'text/html'
 					});
-					github_dirnames = build_submission_dir(b.path);
+					github_dirnames = build_submission_dir(decodeURIComponent(b).match(/path=(.*)/)[1]);
 					res.end(JSON.stringify(github_dirnames));
 				});
 
@@ -838,7 +838,7 @@ function run_gui() {
 					// check if solutions and answers directories exist
 					let doesExist = fs.readdirSync(`./github_dirs/${contestant}`);
 					if (!(doesExist.includes('answers') && doesExist.includes('solutions'))) {
-						rest.write(`<li>
+						res.write(`<li>
 							${contestant} did not have proper directory structure (/answers and /solutions), so they are not being evaluated.
 						</li>`);
 						continue;
